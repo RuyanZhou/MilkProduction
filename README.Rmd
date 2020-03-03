@@ -1,0 +1,184 @@
+---
+title: "Milk_Production"
+author: "Ruyan Zhou"
+date: "3/3/2020"
+output: md_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+### A hard warm up
+```{r}
+milk = read_csv("https://github.com/rfordatascience/tidytuesday/raw/master/data/2019/2019-01-29/milkcow_facts.csv")
+```
+
+```{r}
+head(milk)
+```
+
+```{r}
+milk %>% 
+  pivot_longer(c("avg_milk_cow_number",
+                 "milk_per_cow",
+                 "milk_production_lbs",
+                 "avg_price_milk",
+                 "dairy_ration",
+                 "milk_feed_price_ratio",
+                 "milk_cow_cost_per_animal",
+                 "milk_volume_to_buy_cow_in_lbs",
+                 "alfalfa_hay_price",
+                 "slaughter_cow_price"),
+               names_to = "variable",
+               values_to = "value") %>% 
+  ggplot(aes(x = year, y = value)) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~variable, scales = "free")
+
+# easier way
+milk %>% 
+  pivot_longer(-year,
+               names_to = "variable",
+               values_to = "value") %>% 
+  ggplot(aes(x = year, y = value, col = variable)) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~variable, scales = "free")
+```
+
+
+
+
+### Show that wisconsin is best.
+
+```{r}
+milkprod = read_csv("https://github.com/rfordatascience/tidytuesday/raw/master/data/2019/2019-01-29/state_milk_production.csv")
+```
+
+```{r}
+head(milkprod)
+```
+
+```{r}
+# average milk production
+milkprod %>% 
+  group_by(state, year) %>% 
+  summarise(avg_milk_produced = mean(milk_produced, na.rm = T)) %>% 
+  ggplot(aes(x = year, y = avg_milk_produced, col = state)) +
+  geom_point() +
+  geom_line() +
+  facet_wrap(~state)
+```
+
+
+```{r}
+milkprod %>% 
+  ggplot(aes(x = year, y = milk_produced, col = state))+
+  geom_point() +
+  geom_line() +
+  facet_wrap(~state)
+```
+  
+???seems take average automatically.
+  
+```{r}
+milkprod %>% 
+  ggplot(aes(x = year, y = milk_produced, col = state))+
+  geom_point() +
+  geom_line() +
+  facet_wrap(~state, scales = "free")
+```
+
+```{r}
+milkprod %>% 
+  group_by(state) %>% 
+  summarise(total_prod = sum(milk_produced)) %>% 
+  ggplot(aes(x = 1, y = total_prod, col = state))+
+  geom_point()+
+  facet_wrap(~state)
+```
+
+
+```{r}
+milkprod %>% 
+  filter(state == "Texas"| state =="California"| state =="Wisconsin") %>% 
+  ggplot(aes(x = year, y = milk_produced, col = state))+
+  geom_point() +
+  geom_line() +
+  facet_wrap(~state)
+```
+
+```{r}
+popu = read_csv("https://raw.githubusercontent.com/jakevdp/PythonDataScienceHandbook/master/notebooks/data/state-population.csv")
+area = read_csv("https://raw.githubusercontent.com/jakevdp/PythonDataScienceHandbook/master/notebooks/data/state-areas.csv")
+states = read_csv("https://raw.githubusercontent.com/jakevdp/PythonDataScienceHandbook/master/notebooks/data/state-abbrevs.csv")
+```
+
+```{r}
+data = popu %>% 
+  pivot_wider(names_from = ages, values_from = population) %>% 
+  mutate(state = states$state[match(`state/region`, states$abbreviation)]) %>% 
+  select(state,year,under18,total) %>% 
+  left_join(area, by = "state") %>% 
+  left_join(milkprod, by = c("state","year")) %>% 
+  mutate(avg_by_tot_popu = milk_produced/total,
+         avg_by_under_18 = milk_produced/under18,
+         avg_by_area = milk_produced/`area (sq. mi)`) %>% 
+  filter(state == "Wisconsin"|state == "Texas"|state == "California") 
+
+data %>% ggplot(aes(x = year, y = avg_by_area, col = state))+
+  geom_point() +
+  geom_line() +
+  facet_wrap(~state)
+  
+data %>% ggplot(aes(x = year, y = avg_by_under_18, col = state))+
+  geom_point() +
+  geom_line() +
+  facet_wrap(~state)
+  
+data %>% ggplot(aes(x = year, y = avg_by_tot_popu, col = state))+
+  geom_point() +
+  geom_line() +
+  facet_wrap(~state)
+
+data %>% ggplot(aes(x = year, y = avg_by_area, col = state))+
+  geom_point() +
+  geom_line() +
+  facet_wrap(~state, scales = "free")
+  
+data %>% ggplot(aes(x = year, y = avg_by_under_18, col = state))+
+  geom_point() +
+  geom_line() +
+  facet_wrap(~state, scales = "free")
+  
+data %>% ggplot(aes(x = year, y = avg_by_tot_popu, col = state))+
+  geom_point() +
+  geom_line() +
+  facet_wrap(~state, scales = "free")
+```
+
+Better not use 'scales = "free"' cuz we are comparing among plots.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
